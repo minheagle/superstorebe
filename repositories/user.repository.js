@@ -4,37 +4,45 @@ import bcrypt from "bcrypt";
 import Exception from "../exceptions/Exception.js";
 import MESSAGE from "../constants/message.js";
 
-const registerRepo = async ({ email, password, fullName, phone }) => {
+const registerRepo = async ({
+  fullName,
+  phone,
+  email,
+  password,
+  role,
+  address,
+}) => {
   const existUser = await User.findOne({ email }).exec();
   if (existUser) {
     throw new Exception(MESSAGE.USER_EXITS);
   }
-  const hashPassword = await bcrypt.hash(
-    password,
-    parseInt(process.env.SALT_ROUNDS)
-  );
+
   const newUser = await User.create({
     fullName,
     phone,
     email,
-    password: hashPassword,
+    password,
+    role,
+    address,
   });
   return newUser;
 };
 
-const loginRepo = async ({ email, password }) => {
+const loginRepo = async (email) => {
   const existUser = await User.findOne({ email }).exec();
   if (existUser === null) {
-    throw new Exception(MESSAGE.LOGIN_FAIL);
+    throw new Exception(MESSAGE.USER.LOGIN_FAIL);
   }
-  let isMatchPassword = await bcrypt.compare(password, existUser.password);
-  if (isMatchPassword) {
-    return existUser;
-  }
+
+  return existUser;
 };
 
 const getAllRepo = async () => {
   const listUser = await User.find();
+  if (listUser === null) {
+    throw new Exception(MESSAGE.USER.GET_ALL_USER_FAIL);
+  }
+
   return listUser;
 };
 
@@ -57,6 +65,10 @@ const updateRepo = async ({ id, fullName, phone }) => {
   return editUser;
 };
 
+const updateRefreshTokenRepo = async (id, refreshToken) => {
+  await User.findByIdAndUpdate(id, { refreshToken });
+};
+
 const deleteRepo = async (id) => {
   const deleteUser = await User.findByIdAndDelete(id).exec();
   if (deleteUser === null) {
@@ -71,5 +83,6 @@ export default {
   getAllRepo,
   getByIdRepo,
   updateRepo,
+  updateRefreshTokenRepo,
   deleteRepo,
 };

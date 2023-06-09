@@ -1,16 +1,18 @@
-import { userRepository } from "../repositories/index.js";
+import { StatusCodes } from "http-status-codes";
+
+import { userService } from "../services/index.js";
 import MESSAGE from "../constants/message.js";
 
 const getAll = async (req, res) => {
   try {
-    const listUser = await userRepository.getAllRepo();
-    res.status(200).json({
-      message: "Get success",
+    const listUser = await userService.getAllUserService();
+    return res.status(StatusCodes.OK).json({
+      message: MESSAGE.USER.GET_ALL_USER_SUCCESS,
       data: listUser,
     });
   } catch (error) {
-    res.status(404).json({
-      message: "Get fail",
+    return res.status(StatusCodes.NOT_FOUND).json({
+      message: MESSAGE.USER.GET_ALL_USER_FAIL,
       data: "",
     });
   }
@@ -19,13 +21,20 @@ const getAll = async (req, res) => {
 const getById = async (req, res) => {
   try {
     const { id } = req.params;
-    const findUser = await userRepository.getByIdRepo(id);
-    res.status(200).json({
-      message: "Get User success",
-      data: findUser,
+    if (!id) {
+      return res.status(StatusCodes.NOT_FOUND).json({
+        message: MESSAGE.USER.USER_NOT_FOUND,
+        data: "",
+      });
+    }
+    const foundUser = await userService.getUserByIdService(id);
+
+    return res.status(StatusCodes.OK).json({
+      message: MESSAGE.USER.GET_USER_BY_ID_SUCCESS,
+      data: foundUser,
     });
   } catch (error) {
-    res.status(404).json({
+    return res.status(StatusCodes.NOT_FOUND).json({
       message: MESSAGE.USER_NOT_FOUND,
       data: "",
     });
@@ -33,20 +42,28 @@ const getById = async (req, res) => {
 };
 
 const register = async (req, res) => {
-  const { fullName, phone, email, password } = req.body;
+  const { fullName, phone, email, password, role, address } = req.body;
+  if (!fullName || !phone || !email || !password) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      message: MESSAGE.USER.MISSING_FIELD,
+      data: "",
+    });
+  }
   try {
-    const newUser = await userRepository.registerRepo({
+    const newUser = await userService.registerService({
       fullName,
       phone,
       email,
       password,
+      role,
+      address,
     });
-    res.status(201).json({
-      message: "Register Success",
+    return res.status(StatusCodes.CREATED).json({
+      message: MESSAGE.USER.REGISTER_SUCCESS,
       data: newUser,
     });
   } catch (error) {
-    res.status(400).json({
+    return res.status(StatusCodes.BAD_REQUEST).json({
       message: MESSAGE.USER_EXITS,
       data: "",
     });
@@ -56,34 +73,54 @@ const register = async (req, res) => {
 const login = async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) {
-    res.status(400).json({
-      message: "Login Fail",
-      data: "",
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "FAIL",
+      message: MESSAGE.USER.MISSING_FIELD,
+      results: "",
     });
   }
   try {
-    const user = await userRepository.loginRepo({ email, password });
-    res.status(200).json({
-      message: "Login Success",
-      data: user,
+    const user = await userService.loginService(email, password);
+    const { userDTO, accessToken, refreshToken } = user;
+    res.cookie("refreshToken", refreshToken, {
+      httpOnly: true,
+      maxAge: 2 * 24 * 60 * 60 * 1000,
+    });
+    return res.status(StatusCodes.OK).json({
+      status: "OK",
+      message: MESSAGE.USER.LOGIN_SUCCESS,
+      results: {
+        data: userDTO,
+        accessToken,
+      },
     });
   } catch (error) {
-    throw error;
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "FAIL",
+      message: MESSAGE.USER.LOGIN_FAIL,
+      results: "",
+    });
   }
 };
 
 const updateUser = async (req, res) => {
   const { id } = req.params;
   const { fullName, phone } = req.body;
+  if (!fullName || !phone) {
+    res.status(StatusCodes.BAD_REQUEST).json({
+      message: MESSAGE.USER.MISSING_FIELD,
+      data: "",
+    });
+  }
   try {
     const editUser = await userRepository.updateRepo({ id, fullName, phone });
-    res.status(200).json({
-      message: "Update User Success",
+    res.status(StatusCodes.OK).json({
+      message: MESSAGE.USER.UPDATE_USER_SUCCESS,
       data: editUser,
     });
   } catch (error) {
-    res.status(404).json({
-      message: "Update User Fail",
+    res.status(StatusCodes.NOT_FOUND).json({
+      message: MESSAGE.USER.UPDATE_USER_FAIL,
       data: "",
     });
   }
@@ -93,12 +130,12 @@ const deleteUser = async (req, res) => {
   const { id } = req.params;
   try {
     const deleteUser = await userRepository.deleteRepo(id);
-    res.status(200).json({
-      message: "Delete User Success",
+    res.status(StatusCodes.OK).json({
+      message: MESSAGE.USER.DELETE_USER_SUCCESS,
       data: "",
     });
   } catch (error) {
-    res.status(404).json({
+    res.status(StatusCodes.NOT_FOUND).json({
       message: MESSAGE.USER_NOT_FOUND,
       data: "",
     });
