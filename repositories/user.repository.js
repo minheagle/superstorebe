@@ -1,5 +1,4 @@
 import { User } from "../models/index.js";
-import bcrypt from "bcrypt";
 
 import Exception from "../exceptions/Exception.js";
 import MESSAGE from "../constants/message.js";

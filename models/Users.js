@@ -27,6 +27,7 @@ export default mongoose.model(
       },
       address: {
         type: String,
+        default: "",
       },
       isBanned: {
         type: Boolean,

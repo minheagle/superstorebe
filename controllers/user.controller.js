@@ -49,22 +49,25 @@ const register = async (req, res) => {
       data: "",
     });
   }
+  debugger;
   try {
+    debugger;
     const newUser = await userService.registerService({
-      fullName,
-      phone,
-      email,
-      password,
-      role,
-      address,
+      fullName: fullName,
+      phone: phone,
+      email: email,
+      password: password,
+      role: role,
+      address: address,
     });
+    debugger;
     return res.status(StatusCodes.CREATED).json({
       message: MESSAGE.USER.REGISTER_SUCCESS,
       data: newUser,
     });
   } catch (error) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-      message: MESSAGE.USER_EXITS,
+      message: error,
       data: "",
     });
   }

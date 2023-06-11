@@ -13,10 +13,13 @@ const registerService = async ({
   roleCtrl,
   addressCtrl,
 }) => {
+  debugger;
   const hashPassword = await bcrypt.hash(
     passwordCtrl,
     parseInt(process.env.SALT_ROUNDS)
   );
+  debugger;
+  if (hashPassword) throw new Exception("Bi loi hash");
   const newUser = await userRepository.registerRepo({
     fullName: fullNameCtrl,
     phone: phoneCtrl,
@@ -25,7 +28,9 @@ const registerService = async ({
     role: roleCtrl,
     address: addressCtrl,
   });
+  debugger;
   if (newUser === null) throw new Exception(MESSAGE.USER.REGISTER_FAIL);
+  console.log(newUser);
 
   const { password, createdAt, updatedAt, __v, ...userDTO } = newUser._doc;
   return userDTO;

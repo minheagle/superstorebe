@@ -33,9 +33,13 @@ const MESSAGE = {
   },
   TOKEN: {
     INVALID_TOKEN: "Invalid token",
+    NO_TOKEN: "No Token",
   },
   ROLE: {
     REQUIRED_ROLE: "Required Role",
+  },
+  COMMON: {
+    NOT_FOUND: "Not Found",
   },
 };
 
