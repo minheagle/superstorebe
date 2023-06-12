@@ -11,11 +11,6 @@ const registerRepo = async ({
   role,
   address,
 }) => {
-  const existUser = await User.findOne({ email }).exec();
-  if (existUser) {
-    throw new Exception(MESSAGE.USER_EXITS);
-  }
-
   const newUser = await User.create({
     fullName,
     phone,
@@ -53,27 +48,93 @@ const getByIdRepo = async (id) => {
   return findUser;
 };
 
-const updateRepo = async ({ id, fullName, phone }) => {
+const updateRepo = async ({ id, fullName, phone, email, address }) => {
   const editUser = await User.findByIdAndUpdate(id, {
-    fullName: fullName,
-    phone: phone,
+    fullName,
+    phone,
+    email,
+    address,
   });
   if (editUser === null) {
-    throw new Exception(MESSAGE.USER_NOT_FOUND);
+    throw new Exception(MESSAGE.USER.UPDATE_USER_FAIL);
   }
   return editUser;
+};
+
+const updateForAdminRepo = async ({
+  id,
+  fullName,
+  phone,
+  email,
+  address,
+  role,
+}) => {
+  const result = await User.findByIdAndUpdate(id, {
+    fullName,
+    phone,
+    email,
+    address,
+    role,
+  });
+  if (result === null) throw new Exception(MESSAGE.USER.UPDATE_USER_FAIL);
+
+  return result;
 };
 
 const updateRefreshTokenRepo = async (id, refreshToken) => {
   await User.findByIdAndUpdate(id, { refreshToken });
 };
 
+const changeBannedRepo = async (id, stateBanned) => {
+  return await User.findByIdAndUpdate(id, { isBanned: stateBanned });
+};
+
+const changeBlockedRepo = async (id, stateBlocked) => {
+  return await User.findByIdAndUpdate(id, { isBlocked: stateBlocked });
+};
+
+const changePassword = async (id, password) => {
+  return await User.findByIdAndUpdate(id, { password });
+};
+
 const deleteRepo = async (id) => {
-  const deleteUser = await User.findByIdAndDelete(id).exec();
-  if (deleteUser === null) {
-    throw new Exception(MESSAGE.USER_NOT_FOUND);
+  return await User.findByIdAndUpdate(id, { isActive: false });
+};
+
+const unDeleteRepo = async (id) => {
+  return await User.findByIdAndUpdate(id, { isActive: true });
+};
+
+const existId = async (id) => {
+  const foundUser = await User.findById(id);
+  if (foundUser === null) {
+    return false;
   }
-  return deleteUser;
+  return true;
+};
+
+const existEmail = async (email) => {
+  const foundUser = await User.findOne({ email }).exec();
+  if (foundUser === null) {
+    return false;
+  }
+  return true;
+};
+
+const existPhone = async (phone) => {
+  const foundUser = await User.findOne({ phone }).exec();
+  if (foundUser === null) {
+    return false;
+  }
+  return true;
+};
+
+const existUser = async (id) => {
+  const foundUser = await User.findById(id);
+  if (foundUser === null) {
+    return false;
+  }
+  return true;
 };
 
 export default {
@@ -82,6 +143,15 @@ export default {
   getAllRepo,
   getByIdRepo,
   updateRepo,
+  updateForAdminRepo,
   updateRefreshTokenRepo,
   deleteRepo,
+  unDeleteRepo,
+  changeBannedRepo,
+  changeBlockedRepo,
+  existId,
+  existEmail,
+  existPhone,
+  changePassword,
+  existUser,
 };

@@ -7,36 +7,72 @@ const getAll = async (req, res) => {
   try {
     const listUser = await userService.getAllUserService();
     return res.status(StatusCodes.OK).json({
+      status: "OK",
       message: MESSAGE.USER.GET_ALL_USER_SUCCESS,
-      data: listUser,
+      results: {
+        data: listUser,
+      },
     });
   } catch (error) {
     return res.status(StatusCodes.NOT_FOUND).json({
-      message: MESSAGE.USER.GET_ALL_USER_FAIL,
-      data: "",
+      status: "FAIl",
+      message: error.message,
+      results: "",
     });
   }
 };
 
 const getById = async (req, res) => {
+  const { id } = req.params;
+  if (!id) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "FAIL",
+      message: MESSAGE.USER.USER_NOT_FOUND,
+      results: "",
+    });
+  }
   try {
-    const { id } = req.params;
-    if (!id) {
-      return res.status(StatusCodes.NOT_FOUND).json({
-        message: MESSAGE.USER.USER_NOT_FOUND,
-        data: "",
-      });
-    }
     const foundUser = await userService.getUserByIdService(id);
 
     return res.status(StatusCodes.OK).json({
+      status: "OK",
       message: MESSAGE.USER.GET_USER_BY_ID_SUCCESS,
-      data: foundUser,
+      results: {
+        data: foundUser,
+      },
     });
   } catch (error) {
     return res.status(StatusCodes.NOT_FOUND).json({
-      message: MESSAGE.USER_NOT_FOUND,
-      data: "",
+      status: "FAIL",
+      message: error.message,
+      results: "",
+    });
+  }
+};
+
+const getByIdForAdmin = async (req, res) => {
+  const { id } = req.params;
+  if (id === null) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "FAIL",
+      message: MESSAGE.COMMON.MISSING_PARAMETER,
+      results: "",
+    });
+  }
+  try {
+    const result = await userService.getUserByIdForAdminService(id);
+    return res.status(StatusCodes.OK).json({
+      status: "OK",
+      message: MESSAGE.USER.GET_USER_BY_ID_SUCCESS,
+      results: {
+        data: result,
+      },
+    });
+  } catch (error) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "FAIL",
+      message: error.message,
+      results: "",
     });
   }
 };
@@ -45,30 +81,32 @@ const register = async (req, res) => {
   const { fullName, phone, email, password, role, address } = req.body;
   if (!fullName || !phone || !email || !password) {
     return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "FAIL",
       message: MESSAGE.USER.MISSING_FIELD,
-      data: "",
+      results: "",
     });
   }
-  debugger;
   try {
-    debugger;
     const newUser = await userService.registerService({
-      fullName: fullName,
-      phone: phone,
-      email: email,
-      password: password,
-      role: role,
-      address: address,
+      fullName,
+      phone,
+      email,
+      passwordCtrl: password,
+      role,
+      address,
     });
-    debugger;
     return res.status(StatusCodes.CREATED).json({
+      status: "OK",
       message: MESSAGE.USER.REGISTER_SUCCESS,
-      data: newUser,
+      results: {
+        data: newUser,
+      },
     });
   } catch (error) {
     return res.status(StatusCodes.BAD_REQUEST).json({
-      message: error,
-      data: "",
+      status: "FAIL",
+      message: error.message,
+      results: "",
     });
   }
 };
@@ -100,7 +138,7 @@ const login = async (req, res) => {
   } catch (error) {
     return res.status(StatusCodes.BAD_REQUEST).json({
       status: "FAIL",
-      message: MESSAGE.USER.LOGIN_FAIL,
+      message: error.message,
       results: "",
     });
   }
@@ -108,41 +146,162 @@ const login = async (req, res) => {
 
 const updateUser = async (req, res) => {
   const { id } = req.params;
-  const { fullName, phone } = req.body;
-  if (!fullName || !phone) {
+  const { fullName, phone, email, address } = req.body;
+  if (
+    fullName === null ||
+    phone === null ||
+    email === null ||
+    address === null
+  ) {
     res.status(StatusCodes.BAD_REQUEST).json({
+      status: "FAIL",
       message: MESSAGE.USER.MISSING_FIELD,
-      data: "",
+      results: "",
     });
   }
   try {
-    const editUser = await userRepository.updateRepo({ id, fullName, phone });
+    const editUser = await userService.updateForUserService({
+      id,
+      fullName,
+      email,
+      phone,
+      address,
+    });
     res.status(StatusCodes.OK).json({
+      status: "OK",
       message: MESSAGE.USER.UPDATE_USER_SUCCESS,
-      data: editUser,
+      results: {
+        data: editUser,
+      },
     });
   } catch (error) {
     res.status(StatusCodes.NOT_FOUND).json({
-      message: MESSAGE.USER.UPDATE_USER_FAIL,
-      data: "",
+      status: "FAIL",
+      message: error.message,
+      results: "",
+    });
+  }
+};
+
+const changeBanned = async (req, res) => {
+  const { id } = req.params;
+  const { stateBanned } = req.body;
+  if (id === null || stateBanned === null) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "FAIL",
+      message: MESSAGE.COMMON.MISSING_PARAMETER,
+      results: "",
+    });
+  }
+  try {
+    const result = await userService.setBannedService(id, stateBanned);
+    return res.status(StatusCodes.OK).json({
+      status: "OK",
+      message: MESSAGE.USER.CHANGE_SUCCESS,
+      results: {
+        data: result,
+      },
+    });
+  } catch (error) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "FAIL",
+      message: error.message,
+      results: "",
+    });
+  }
+};
+
+const changeBlocked = async (req, res) => {
+  const { id } = req.params;
+  const { stateBlocked } = req.body;
+  if (id === null || stateBlocked === null) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "FAIL",
+      message: MESSAGE.COMMON.MISSING_PARAMETER,
+      results: "",
+    });
+  }
+  try {
+    const result = await userService.setBlockedService(id, stateBlocked);
+    return res.status(StatusCodes.OK).json({
+      status: "OK",
+      message: MESSAGE.USER.CHANGE_SUCCESS,
+      results: {
+        data: result,
+      },
+    });
+  } catch (error) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "FAIL",
+      message: error.message,
+      results: "",
     });
   }
 };
 
 const deleteUser = async (req, res) => {
   const { id } = req.params;
+  if (id === null) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "FAIL",
+      message: MESSAGE.COMMON.MISSING_PARAMETER,
+      results: "",
+    });
+  }
   try {
-    const deleteUser = await userRepository.deleteRepo(id);
-    res.status(StatusCodes.OK).json({
+    const result = await userService.deleteUserService(id);
+    return res.status(StatusCodes.OK).json({
+      status: "OK",
       message: MESSAGE.USER.DELETE_USER_SUCCESS,
-      data: "",
+      results: {
+        data: result,
+      },
     });
   } catch (error) {
-    res.status(StatusCodes.NOT_FOUND).json({
-      message: MESSAGE.USER_NOT_FOUND,
-      data: "",
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "FAIL",
+      message: error.message,
+      results: "",
     });
   }
 };
 
-export { getAll, getById, register, login, updateUser, deleteUser };
+const unDeleteUser = async (req, res) => {
+  const { id } = req.params;
+  if (id === null) {
+    return res.status(StatusCodes.NOT_FOUND).json({
+      status: "FAIl",
+      message: MESSAGE.USER.USER_NOT_FOUND,
+      results: "",
+    });
+  }
+  try {
+    const result = await userService.unDeleteUserService(id);
+    return res.status(StatusCodes.OK).json({
+      status: "OK",
+      message: MESSAGE.USER.CHANGE_SUCCESS,
+      results: {
+        data: result,
+      },
+    });
+  } catch (error) {
+    return res.status(StatusCodes.BAD_REQUEST).json({
+      status: "FAIL",
+      message: error.message,
+      results: "",
+    });
+  }
+};
+
+export default {
+  getAll,
+  getById,
+  getByIdForAdmin,
+  register,
+  login,
+  updateUser,
+  changeBanned,
+  changeBlocked,
+  deleteUser,
+  unDeleteUser,
+};

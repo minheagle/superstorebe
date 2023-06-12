@@ -37,6 +37,10 @@ export default mongoose.model(
         type: Boolean,
         default: false,
       },
+      isActive: {
+        type: Boolean,
+        default: true,
+      },
       refreshToken: {
         type: String,
       },

@@ -6,52 +6,68 @@ import MESSAGE from "../constants/message.js";
 import JWT from "../utils/jwt.js";
 
 const registerService = async ({
-  fullNameCtrl,
-  phoneCtrl,
-  emailCtrl,
+  fullName,
+  phone,
+  email,
   passwordCtrl,
-  roleCtrl,
-  addressCtrl,
+  role,
+  address,
 }) => {
-  debugger;
+  const checkEmail = await userRepository.existEmail(email);
+  const checkPhone = await userRepository.existPhone(phone);
+  if (checkEmail && checkPhone) {
+    return new Exception(MESSAGE.USER.USER_EXITS);
+  }
   const hashPassword = await bcrypt.hash(
     passwordCtrl,
     parseInt(process.env.SALT_ROUNDS)
   );
-  debugger;
-  if (hashPassword) throw new Exception("Bi loi hash");
   const newUser = await userRepository.registerRepo({
-    fullName: fullNameCtrl,
-    phone: phoneCtrl,
-    email: emailCtrl,
+    fullName,
+    phone,
+    email,
     password: hashPassword,
-    role: roleCtrl,
-    address: addressCtrl,
+    role,
+    address,
   });
-  debugger;
   if (newUser === null) throw new Exception(MESSAGE.USER.REGISTER_FAIL);
-  console.log(newUser);
 
-  const { password, createdAt, updatedAt, __v, ...userDTO } = newUser._doc;
+  const {
+    password,
+    refreshToken,
+    isBanned,
+    isBlocked,
+    isActive,
+    createdAt,
+    updatedAt,
+    __v,
+    ...userDTO
+  } = newUser._doc;
   return userDTO;
 };
 
 const loginService = async (email, passwordCtrl) => {
   const foundUser = await userRepository.loginRepo(email);
-  let isMatchPassword = await bcrypt.compare(passwordCtrl, foundUser.password);
-
-  if (!isMatchPassword) {
-    throw new Exception(MESSAGE.USER.LOGIN_FAIL);
-  }
   const {
     password,
+    refreshToken: refreshToken1,
     isBanned,
     isBlocked,
+    isActive,
     createdAt,
     updatedAt,
     __v,
     ...userDTO
   } = foundUser._doc;
+  if (!isActive) throw new Exception(MESSAGE.USER.USER_NOT_ACTIVE);
+  if (isBlocked) throw new Exception(MESSAGE.USER.USER_BLOCKED);
+  if (isBanned) throw new Exception(MESSAGE.USER.USER_BANNED);
+
+  let isMatchPassword = await bcrypt.compare(passwordCtrl, foundUser.password);
+
+  if (!isMatchPassword) {
+    throw new Exception(MESSAGE.USER.LOGIN_FAIL);
+  }
 
   const accessToken = JWT.generateAccessToken(userDTO._id, userDTO.role);
   const refreshToken = JWT.generateRefreshToken(userDTO._id, userDTO.role);
@@ -63,7 +79,7 @@ const loginService = async (email, passwordCtrl) => {
 const getAllUserService = async () => {
   const listUser = await userRepository.getAllRepo();
   const listUserDTO = listUser.map((item) => {
-    const { password, __v, ...userDTO } = item._doc;
+    const { password, refreshToken, __v, ...userDTO } = item._doc;
     return userDTO;
   });
   return listUserDTO;
@@ -71,37 +87,177 @@ const getAllUserService = async () => {
 
 const getUserByIdService = async (id) => {
   const foundUser = await userRepository.getByIdRepo(id);
+  if (foundUser === null) throw new Exception(MESSAGE.USER.GET_USER_BY_ID_FAIL);
 
   const {
     password,
+    refreshToken,
     isBanned,
     isBlocked,
+    isActive,
     createdAt,
     updatedAt,
     __v,
     ...userDTO
   } = foundUser._doc;
+
   return userDTO;
 };
 
-const updateForUserService = async () => {};
+const getUserByIdForAdminService = async (id) => {
+  const foundUser = await userRepository.getByIdRepo(id);
+  if (foundUser === null) throw new Exception(MESSAGE.USER.GET_USER_BY_ID_FAIL);
 
-const updateForAdminService = async () => {};
+  const { password, refreshToken, __v, ...userDTO } = foundUser._doc;
 
-const deleteUserService = async () => {};
+  return userDTO;
+};
 
-const setBannedService = async () => {};
+const updateForUserService = async ({
+  id,
+  fullName,
+  phone,
+  email,
+  address,
+}) => {
+  const isCheckExist = await userRepository.existUser(id);
+  if (!isCheckExist) throw new Exception(MESSAGE.USER.USER_NOT_FOUND);
+  const isCheckExistEmail = await userRepository.existEmail(email);
+  if (isCheckExistEmail) throw new Exception(MESSAGE.USER.USER_EXITS);
+  const isCheckExistPhone = await userRepository.existPhone(phone);
+  if (isCheckExistPhone) throw new Exception(MESSAGE.USER.USER_EXITS);
 
-const setBlockedService = async () => {};
+  await userRepository.updateRepo({
+    id,
+    fullName,
+    phone,
+    email,
+    address,
+  });
+  const result = await userRepository.getByIdRepo(id);
+  const {
+    password,
+    refreshToken,
+    isBanned,
+    isBlocked,
+    isActive,
+    __v,
+    ...userDTO
+  } = result._doc;
+  return userDTO;
+};
+
+const updateForAdminService = async ({
+  id,
+  fullName,
+  phone,
+  email,
+  address,
+  role,
+}) => {
+  const isCheckExist = await userRepository.existUser(id);
+  if (!isCheckExist) throw new Exception(MESSAGE.USER.USER_NOT_FOUND);
+  const isCheckExistEmail = await userRepository.existEmail(email);
+  if (isCheckExistEmail) throw new Exception(MESSAGE.USER.USER_EXITS);
+  const isCheckExistPhone = await userRepository.existPhone(phone);
+  if (isCheckExistPhone) throw new Exception(MESSAGE.USER.USER_EXITS);
+
+  await userRepository.updateForAdminRepo({
+    id,
+    fullName,
+    phone,
+    email,
+    address,
+    role,
+  });
+  const result = await userRepository.getByIdRepo(id);
+  const {
+    password,
+    refreshToken,
+    isActive,
+    isBanned,
+    isBlocked,
+    __v,
+    ...userDTO
+  } = result._doc;
+  return userDTO;
+};
+
+const deleteUserService = async (id) => {
+  const deleteUser = await userRepository.deleteRepo(id);
+  if (deleteUser === null) throw new Exception(MESSAGE.USER.DELETE_USER_FAIL);
+  const result = await userRepository.getByIdRepo(id);
+  const {
+    password,
+    refreshToken,
+    isActive,
+    isBanned,
+    isBlocked,
+    __v,
+    ...userDTO
+  } = result._doc;
+  return userDTO;
+};
+
+const unDeleteUserService = async (id) => {
+  const isExistId = await userRepository.existId(id);
+  if (!isExistId) throw new Exception(MESSAGE.USER.USER_BANNED);
+
+  const unDeleteUser = await userRepository.unDeleteRepo(id);
+  const {
+    password,
+    refreshToken,
+    isActive,
+    isBanned,
+    isBlocked,
+    __v,
+    ...userDTO
+  } = unDeleteUser._doc;
+  return userDTO;
+};
+
+const setBannedService = async (id, stateBanned) => {
+  const result = await userRepository.changeBannedRepo(id, stateBanned);
+  if (result === null) throw new Exception(MESSAGE.USER.CHANGE_FAIL);
+  const userChanged = await userRepository.getByIdRepo(id);
+  const {
+    password,
+    refreshToken,
+    isActive,
+    isBanned,
+    isBlocked,
+    __v,
+    ...userDTO
+  } = userChanged._doc;
+  return userDTO;
+};
+
+const setBlockedService = async (id, stateBlocked) => {
+  const result = await userRepository.changeBlockedRepo(id, stateBlocked);
+  if (result === null) throw new Exception(MESSAGE.USER.CHANGE_FAIL);
+  const userChanged = await userRepository.getByIdRepo(id);
+  const {
+    password,
+    refreshToken,
+    isActive,
+    isBanned,
+    isBlocked,
+    __v,
+    ...userDTO
+  } = userChanged._doc;
+  return userDTO;
+};
 
 export default {
   registerService,
   loginService,
   getAllUserService,
   getUserByIdService,
+  getUserByIdForAdminService,
   updateForUserService,
   updateForAdminService,
   deleteUserService,
+  unDeleteUserService,
   setBannedService,
   setBlockedService,
 };

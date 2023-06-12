@@ -8,11 +8,20 @@ const checkAccessToken = (req, res, next) => {
   if (token) {
     jwt.verify(token, process.env.JWT_SECRET, function (err, decoded) {
       if (err) {
-        return res.status(401).json({
-          status: "FAIL",
-          message: MESSAGE.TOKEN.INVALID_TOKEN,
-          results: "",
-        });
+        if (err.message === "jwt expired") {
+          return res.status(401).json({
+            status: "FAIL",
+            message: MESSAGE.TOKEN.INVALID_TOKEN,
+            results: "",
+          });
+        }
+        if (err.message === "invalid signature") {
+          return res.status(401).json({
+            status: "FAIL",
+            message: MESSAGE.TOKEN.INVALID_SIGNATURE,
+            results: "",
+          });
+        }
       }
       req.decoded = decoded;
       next();
@@ -38,4 +47,28 @@ const isAdmin = (req, res, next) => {
   });
 };
 
-export default { checkAccessToken, isAdmin };
+const isManager = (req, res, next) => {
+  const { role } = req.decoded;
+  if (role === "manager") {
+    return next();
+  }
+  return res.status(403).json({
+    status: "FAIL",
+    message: MESSAGE.ROLE.REQUIRED_ROLE,
+    results: "",
+  });
+};
+
+const isEmployee = (req, res, next) => {
+  const { role } = req.decoded;
+  if (role === "employee") {
+    return next();
+  }
+  return res.status(403).json({
+    status: "FAIL",
+    message: MESSAGE.ROLE.REQUIRED_ROLE,
+    results: "",
+  });
+};
+
+export default { checkAccessToken, isAdmin, isManager, isEmployee };

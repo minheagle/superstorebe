@@ -16,6 +16,11 @@ const MESSAGE = {
     USER_NOT_FOUND: "User Not Found",
     INVALID_TOKEN: "Invalid Token",
     MISSING_FIELD: "Missing Field",
+    CHANGE_SUCCESS: "Change Success",
+    CHANGE_FAIL: "Change Fail",
+    USER_BANNED: "User Banned",
+    USER_BLOCKED: "User Blocked",
+    USER_NOT_ACTIVE: "User Actived",
   },
   PRODUCT: {
     GET_ALL_PRODUCT_SUCCESS: "Get All Product Success",
@@ -33,6 +38,7 @@ const MESSAGE = {
   },
   TOKEN: {
     INVALID_TOKEN: "Invalid token",
+    INVALID_SIGNATURE: "Invalid Signature",
     NO_TOKEN: "No Token",
   },
   ROLE: {
@@ -40,6 +46,7 @@ const MESSAGE = {
   },
   COMMON: {
     NOT_FOUND: "Not Found",
+    MISSING_PARAMETER: "Missing Parameter",
   },
 };
 
