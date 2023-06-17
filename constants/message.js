@@ -48,6 +48,11 @@ const MESSAGE = {
     NOT_FOUND: "Not Found",
     MISSING_PARAMETER: "Missing Parameter",
   },
+  IMAGE: {
+    TYPE_NOT_SUPPORT: "Type Not Support",
+    SIZE_MORE_THAN_5MB: "Size Image Less Than 5MB",
+    ERROR: "Error",
+  },
 };
 
 export default MESSAGE;

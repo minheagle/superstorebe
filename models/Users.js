@@ -7,14 +7,17 @@ export default mongoose.model(
       id: { type: mongoose.Types.ObjectId },
       fullName: {
         type: String,
+        trim: true,
         required: true,
       },
       phone: {
         type: String,
+        trim: true,
         required: true,
       },
       email: {
         type: String,
+        trim: true,
         required: true,
       },
       password: {
@@ -23,10 +26,15 @@ export default mongoose.model(
       },
       role: {
         type: String,
+        enum: {
+          values: ["admin", "manager", "employee", "user"],
+          message: "{VALUE} not supported",
+        },
         default: "user",
       },
       address: {
         type: String,
+        trim: true,
         default: "",
       },
       isBanned: {
