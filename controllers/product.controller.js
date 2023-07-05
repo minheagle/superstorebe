@@ -1,4 +1,4 @@
-import productService from "../services/index.js";
+import { productService } from "../services/index.js";
 import MESSAGE from "../constants/message.js";
 import ResponseObject from "../utils/ResponseObject.js";
 import Exception from "../exceptions/Exception.js";
